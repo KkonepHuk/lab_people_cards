@@ -1,12 +1,13 @@
 import random
-import main
 from card import *
+from savings_accounts import *
 
 class Person:
-    def __init__(self, first_name, last_name, cards, age = None):
+    def __init__(self, first_name, last_name, cards, age = None, savings_account = None):
         self.last_name = last_name
         self.first_name = first_name
         self.age = age
+        self.savings_account = savings_account
         self.cards = [Card.form_card(card) for card in cards]
 
     def purchase(self):
@@ -25,6 +26,18 @@ class Person:
 
         self.cards[0].spend(price)
         return s
+    
+    def create_savings_account(self, start_balance = 0, percent = 0):
+        self.savings_account = Savings_account(start_balance, percent)
+        self.cards[0].spend(start_balance)
+
+    def get_money(self, amount):
+        if self.savings_account == None:
+            self.cards[0].get(amount)
+        else:
+            deduction = amount * self.savings_account.percent / 100
+            self.savings_account.top_up(deduction)
+            self.cards[0].get(amount - deduction)
 
     def __str__(self):
         return self.show_info()
@@ -33,12 +46,9 @@ class Person:
         return self.show_info()
     
 class Adult(Person):
-    def __init__(self, last_name, first_name, cards, children, age = None, ident = None):
-        super().__init__(last_name, first_name, cards, age)
-        self.ident = self.generate_ident()
+    def __init__(self, last_name, first_name, cards, children, age = None, savings_account = None):
+        super().__init__(last_name, first_name, cards, age, savings_account)
         self.children = [Child.form_child(child) for child in children]
-        for card in self.cards:
-            card.ident = self.ident
 
     
     @classmethod
@@ -49,17 +59,19 @@ class Adult(Person):
 
     def give_money_to_child(self, amount):
         self.cards[0].spend(amount)
-        self.children[0].cards[0].get(amount)
+        self.children[0].get_money(amount)
         
     def show_info(self):
         s = f'{self.first_name} {self.last_name}\n'
         s += f'Cards: {";\n".join([str(card) for card in self.cards])}\n'
+        if self.savings_account != None:
+            s += f'Savings account: {str(self.savings_account)}\n'
         s += f'Children: {"\n".join([str(child) for child in self.children])}'
         return s
     
 class Child(Person):
-    def __init__(self, first_name, last_name, cards, age):
-        super().__init__(first_name, last_name, cards, age)
+    def __init__(self, first_name, last_name, cards, age, savings_account = None):
+        super().__init__(first_name, last_name, cards, age, savings_account = None)
 
     @classmethod
     def form_child(cls, child):
@@ -68,6 +80,8 @@ class Child(Person):
     def show_info(self):
         s = f'{self.first_name} {self.last_name}, {self.age} y.o.\n'
         s += f'Cards: {";\n".join([str(card) for card in self.cards])}'
+        if self.savings_account != None:
+            s += f'Savings account: {str(self.savings_account)}'
         return s
     
 
